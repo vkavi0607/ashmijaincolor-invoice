@@ -1709,34 +1709,47 @@ body {
   text-align: right !important;
 }
 
-/* Download Group Layout */
-.download-group-container {
-  background-color: #f8fafc;
-  border: 1px solid #e2e8f0;
+/* Top Action Bar (Export) */
+.top-action-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
   border-radius: 12px;
-  padding: 16px;
+  padding: 12px 20px;
   width: 100%;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+  margin-bottom: 20px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.04), inset 0 0 0 1px rgba(255, 255, 255, 0.8);
+  position: sticky;
+  top: 0;
+  z-index: 10;
 }
 
-.download-group-title {
-  font-size: 13px;
+.action-bar-title {
+  font-size: 14px;
   font-weight: 700;
-  color: #475569;
-  margin-bottom: 12px;
+  color: #334155;
   text-transform: uppercase;
   letter-spacing: 0.5px;
 }
 
-.download-buttons-row {
-  display: grid;
-  grid-template-columns: 1.5fr 1fr 1fr;
-  gap: 10px;
+.action-buttons-row {
+  display: flex;
+  gap: 12px;
 }
 
 @media (max-width: 480px) {
-  .download-buttons-row {
-    grid-template-columns: 1fr;
+  .top-action-bar {
+    flex-direction: column;
+    gap: 12px;
+    padding: 12px;
+  }
+  .action-buttons-row {
+    width: 100%;
+    justify-content: space-between;
   }
 }
 

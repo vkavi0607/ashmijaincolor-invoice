@@ -228,6 +228,14 @@ function App() {
 
       {/* ====== RIGHT PANEL: PREVIEW & DOWNLOAD ====== */}
       <div className="preview-panel">
+        <div className="download-button-container">
+          <DownloadButton
+            clientName={invoiceState.clientName}
+            isValid={invoiceState.isValid}
+            invoiceState={invoiceState}
+          />
+        </div>
+
         <InvoicePreview
           clientName={invoiceState.clientName}
           invoiceDate={invoiceState.invoiceDate}
@@ -236,14 +244,6 @@ function App() {
           grandTotal={invoiceState.grandTotal}
           columns={invoiceState.columns}
         />
-        
-        <div className="download-button-container">
-          <DownloadButton
-            clientName={invoiceState.clientName}
-            isValid={invoiceState.isValid}
-            invoiceState={invoiceState}
-          />
-        </div>
       </div>
     </div>
   )

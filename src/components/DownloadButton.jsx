@@ -37,9 +37,9 @@ export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
 
 
   return (
-    <div className="download-group-container">
-      <div className="download-group-title">Export Invoice (Max 5MB)</div>
-      <div className="download-buttons-row">
+    <div className="top-action-bar">
+      <div className="action-bar-title">Export</div>
+      <div className="action-buttons-row">
         <button
           className="download-btn-item pdf-btn"
           onClick={() => handleDownload('pdf')}
@@ -65,8 +65,6 @@ export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
           🖼️ JPG
         </button>
       </div>
-
     </div>
   )
 }
-
