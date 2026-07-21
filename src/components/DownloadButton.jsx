@@ -7,6 +7,7 @@ import { exportInvoiceToPDF, exportInvoiceToJPEG, exportInvoiceToJPG } from '../
  */
 export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
   const [isExporting, setIsExporting] = useState(false)
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false)
 
   const handleDownload = async (format) => {
     if (!isValid) {
@@ -15,6 +16,7 @@ export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
     }
 
     setIsExporting(true)
+    setIsDropdownOpen(false)
     try {
       const slug = clientName
         ? clientName.replace(/\s+/g, '-').toLowerCase()
@@ -35,35 +37,42 @@ export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
     }
   }
 
-
   return (
     <div className="top-action-bar">
-      <div className="action-bar-title">Export</div>
-      <div className="action-buttons-row">
-        <button
-          className="download-btn-item pdf-btn"
-          onClick={() => handleDownload('pdf')}
-          disabled={!isValid || isExporting}
-          title="Download as PDF"
-        >
-          📄 PDF
-        </button>
-        <button
-          className="download-btn-item jpeg-btn"
-          onClick={() => handleDownload('jpeg')}
-          disabled={!isValid || isExporting}
-          title="Download as JPEG"
-        >
-          🖼️ JPEG
-        </button>
-        <button
-          className="download-btn-item jpg-btn"
-          onClick={() => handleDownload('jpg')}
-          disabled={!isValid || isExporting}
-          title="Download as JPG"
-        >
-          🖼️ JPG
-        </button>
+      <div 
+        className="export-dropdown-container"
+        onMouseEnter={() => setIsDropdownOpen(true)}
+        onMouseLeave={() => setIsDropdownOpen(false)}
+      >
+        <div className="export-trigger">
+          Export
+          <svg className="export-chevron" width="10" height="6" viewBox="0 0 10 6" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M1 1L5 5L9 1" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+          </svg>
+        </div>
+        
+        {isDropdownOpen && (
+          <div className="export-dropdown-menu">
+            <div 
+              className={`export-dropdown-item ${!isValid || isExporting ? 'disabled' : ''}`} 
+              onClick={() => !(!isValid || isExporting) && handleDownload('pdf')}
+            >
+              PDF
+            </div>
+            <div 
+              className={`export-dropdown-item ${!isValid || isExporting ? 'disabled' : ''}`} 
+              onClick={() => !(!isValid || isExporting) && handleDownload('jpeg')}
+            >
+              JPEG
+            </div>
+            <div 
+              className={`export-dropdown-item ${!isValid || isExporting ? 'disabled' : ''}`} 
+              onClick={() => !(!isValid || isExporting) && handleDownload('jpg')}
+            >
+              JPG
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )
