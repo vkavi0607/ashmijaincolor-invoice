@@ -35,55 +35,6 @@ export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
     }
   }
 
-  const handleExportJSON = () => {
-    try {
-      const config = {
-        clientName: invoiceState.clientName,
-        invoiceDate: invoiceState.invoiceDate,
-        columns: invoiceState.columns,
-        sections: invoiceState.sections,
-        notes: invoiceState.notes
-      }
-      const dataStr = JSON.stringify(config, null, 2)
-      const slug = clientName
-        ? clientName.replace(/\s+/g, '-').toLowerCase()
-        : 'invoice'
-      
-      const dataUri = 'data:application/json;charset=utf-8,' + encodeURIComponent(dataStr)
-      const link = document.createElement('a')
-      link.href = dataUri
-      link.download = `invoice-${slug}.json`
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-    } catch (error) {
-      alert('Error exporting configuration: ' + error.message)
-    }
-  }
-
-  const handleImportJSON = (e) => {
-    const file = e.target.files[0]
-    if (!file) return
-
-    const reader = new FileReader()
-    reader.onload = (event) => {
-      try {
-        const parsed = JSON.parse(event.target.result)
-        if (!parsed || typeof parsed !== 'object') {
-          throw new Error('Invalid JSON format')
-        }
-        if (!parsed.sections || !parsed.columns) {
-          throw new Error('Missing sections or columns data')
-        }
-        invoiceState.loadInvoiceData(parsed)
-      } catch (error) {
-        alert('Failed to parse invoice configuration: ' + error.message)
-      }
-    }
-    reader.readAsText(file)
-    // Reset file input so user can import the same file again if needed
-    e.target.value = ''
-  }
 
   return (
     <div className="download-group-container">
@@ -115,31 +66,6 @@ export const DownloadButton = ({ clientName, isValid, invoiceState }) => {
         </button>
       </div>
 
-      <div style={{ marginTop: '16px', paddingTop: '16px', borderTop: '1px solid #e2e8f0' }}>
-        <div className="download-group-title">Configuration Management</div>
-        <div className="download-buttons-row" style={{ gridTemplateColumns: '1fr 1fr' }}>
-          <button
-            className="download-btn-item json-btn"
-            onClick={handleExportJSON}
-            disabled={!isValid}
-            title="Download configuration JSON to edit later"
-          >
-            💾 Export JSON
-          </button>
-          <label
-            className="download-btn-item import-btn"
-            title="Import configuration JSON to edit"
-          >
-            📂 Import JSON
-            <input
-              type="file"
-              accept=".json"
-              onChange={handleImportJSON}
-              style={{ display: 'none' }}
-            />
-          </label>
-        </div>
-      </div>
     </div>
   )
 }
