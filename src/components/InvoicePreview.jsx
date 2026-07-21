@@ -3,6 +3,7 @@ import { SenderDetails } from './SenderDetails'
 import { BillToSection } from './BillToSection'
 import { InvoiceTable } from './InvoiceTable'
 import { NotesSection } from './NotesSection'
+import { InvoiceFooter } from './InvoiceFooter'
 
 /**
  * InvoicePreview Component
@@ -14,15 +15,19 @@ export const InvoicePreview = ({
   invoiceDate,
   sections,
   notes,
-  grandTotal
+  grandTotal,
+  columns
 }) => {
   return (
     <div id="invoice-preview" className="invoice-container">
       <InvoiceHeader invoiceDate={invoiceDate} />
       <SenderDetails />
       <BillToSection clientName={clientName} />
-      <InvoiceTable sections={sections} grandTotal={grandTotal} />
+      <InvoiceTable sections={sections} grandTotal={grandTotal} columns={columns} />
       <NotesSection notes={notes} />
+      <InvoiceFooter />
     </div>
   )
 }
+
+

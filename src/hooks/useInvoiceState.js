@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { calculateGrandTotal } from '../utils/calculateTotals'
 
 const DEFAULT_NOTES = [
@@ -9,13 +9,22 @@ const DEFAULT_NOTES = [
   'Any additional work will be charged extra.'
 ]
 
+const DEFAULT_COLUMNS = [
+  { id: 'description', label: 'Description', type: 'text', deletable: false },
+  { id: 'quantity', label: 'Quantity / Area', type: 'number', deletable: true },
+  { id: 'rate', label: 'Rate', type: 'number', deletable: true },
+  { id: 'amount', label: 'Amount', type: 'number', deletable: false, isCalculated: true, formula: { multiplier: 'quantity', multiplicand: 'rate' } }
+]
+
 /**
  * Custom hook for managing invoice state
- * Handles client info, sections, line items, and notes
+ * Handles client info, sections, line items, notes, and dynamic columns
  */
 export const useInvoiceState = () => {
   const [clientName, setClientName] = useState('Client Name')
   const [invoiceDate, setInvoiceDate] = useState(new Date().toISOString().split('T')[0])
+  const [columns, setColumns] = useState(DEFAULT_COLUMNS)
+  
   const [sections, setSections] = useState([
     {
       id: 1,
@@ -24,7 +33,7 @@ export const useInvoiceState = () => {
         {
           id: 1,
           description: 'Feature wall mural - Main bedroom',
-          area: 150,
+          quantity: 150,
           rate: 100,
           amount: 15000
         }
@@ -32,6 +41,87 @@ export const useInvoiceState = () => {
     }
   ])
   const [notes, setNotes] = useState(DEFAULT_NOTES)
+
+  // Recalculate amounts of all items if columns change (e.g., if a column is added/deleted or formula changes)
+  const recalculateAllAmounts = useCallback((currentColumns, currentSections) => {
+    const amountCol = currentColumns.find(c => c.isCalculated)
+    if (!amountCol) return currentSections
+
+    const { multiplier, multiplicand } = amountCol.formula || {}
+    const hasMultiplier = currentColumns.some(c => c.id === multiplier)
+    const hasMultiplicand = currentColumns.some(c => c.id === multiplicand)
+
+    return currentSections.map(section => ({
+      ...section,
+      lineItems: (section.lineItems || []).map(item => {
+        let amount = item.amount
+        if (hasMultiplier && hasMultiplicand) {
+          const val1 = parseFloat(item[multiplier]) || 0
+          const val2 = parseFloat(item[multiplicand]) || 0
+          amount = val1 * val2
+        }
+        return { ...item, amount }
+      })
+    }))
+  }, [])
+
+  // Column operations
+  const addColumn = useCallback((label, type = 'text') => {
+    const newId = `col_${Date.now()}`
+    setColumns(prev => {
+      const updated = [...prev]
+      // Insert before the last item (Amount)
+      const amountIndex = updated.findIndex(c => c.id === 'amount')
+      if (amountIndex !== -1) {
+        updated.splice(amountIndex, 0, { id: newId, label, type, deletable: true })
+      } else {
+        updated.push({ id: newId, label, type, deletable: true })
+      }
+      return updated
+    })
+  }, [])
+
+  const deleteColumn = useCallback((columnId) => {
+    setColumns(prev => {
+      const updated = prev.filter(c => c.id !== columnId)
+      // If deleted column was part of formula, we should adjust the formula if possible
+      const amountCol = updated.find(c => c.id === 'amount')
+      if (amountCol && amountCol.formula) {
+        const { multiplier, multiplicand } = amountCol.formula
+        if (multiplier === columnId || multiplicand === columnId) {
+          // Find first two number columns left to use for formula, or disable formula
+          const numCols = updated.filter(c => c.type === 'number' && c.id !== 'amount')
+          if (numCols.length >= 2) {
+            amountCol.formula = { multiplier: numCols[0].id, multiplicand: numCols[1].id }
+          } else {
+            delete amountCol.formula
+          }
+        }
+      }
+      return updated
+    })
+  }, [])
+
+  const updateColumnLabel = useCallback((columnId, newLabel) => {
+    setColumns(prev => prev.map(c => c.id === columnId ? { ...c, label: newLabel } : c))
+  }, [])
+
+  const updateColumnFormula = useCallback((multiplierId, multiplicandId) => {
+    setColumns(prev => prev.map(c => {
+      if (c.id === 'amount') {
+        return {
+          ...c,
+          formula: { multiplier: multiplierId, multiplicand: multiplicandId }
+        }
+      }
+      return c
+    }))
+  }, [])
+
+  // Trigger recalculation when columns schema changes
+  useEffect(() => {
+    setSections(prev => recalculateAllAmounts(columns, prev))
+  }, [columns, recalculateAllAmounts])
 
   // Add a new section
   const addSection = useCallback(() => {
@@ -65,36 +155,50 @@ export const useInvoiceState = () => {
     setSections(sections.map(section => {
       if (section.id === sectionId) {
         const newItemId = Math.max(...(section.lineItems?.map(i => i.id) || [0]), 0) + 1
+        
+        // Build new item based on active columns
+        const newItem = { id: newItemId }
+        columns.forEach(col => {
+          if (col.id !== 'id') {
+            newItem[col.id] = col.type === 'number' ? '' : ''
+          }
+        })
+        newItem.amount = 0
+
         return {
           ...section,
           lineItems: [
             ...(section.lineItems || []),
-            {
-              id: newItemId,
-              description: '',
-              area: '',
-              rate: '',
-              amount: 0
-            }
+            newItem
           ]
         }
       }
       return section
     }))
-  }, [sections])
+  }, [sections, columns])
 
   // Update line item in section
   const updateLineItem = useCallback((sectionId, itemId, updates) => {
-    setSections(sections.map(section => {
+    setSections(sections => sections.map(section => {
       if (section.id === sectionId) {
         return {
           ...section,
           lineItems: section.lineItems.map(item => {
             if (item.id === itemId) {
               const updated = { ...item, ...updates }
-              // Auto-calculate amount if area and rate are provided
-              if (updated.area && updated.rate && !updates.amount) {
-                updated.amount = parseFloat(updated.area) * parseFloat(updated.rate)
+              
+              // Calculate amount if formula is defined
+              const amountCol = columns.find(c => c.isCalculated)
+              if (amountCol && amountCol.formula) {
+                const { multiplier, multiplicand } = amountCol.formula
+                const hasMultiplier = columns.some(c => c.id === multiplier)
+                const hasMultiplicand = columns.some(c => c.id === multiplicand)
+                
+                if (hasMultiplier && hasMultiplicand) {
+                  const val1 = parseFloat(updated[multiplier]) || 0
+                  const val2 = parseFloat(updated[multiplicand]) || 0
+                  updated.amount = val1 * val2
+                }
               }
               return updated
             }
@@ -104,7 +208,7 @@ export const useInvoiceState = () => {
       }
       return section
     }))
-  }, [sections])
+  }, [columns])
 
   // Remove line item from section
   const removeLineItem = useCallback((sectionId, itemId) => {
@@ -137,16 +241,27 @@ export const useInvoiceState = () => {
   }, [notes])
 
   // Calculate grand total
-  const grandTotal = calculateGrandTotal(sections)
+  const grandTotal = calculateGrandTotal(sections, columns)
 
-  // Validate invoice (basic validation)
+  // Validate invoice
   const isValid = clientName.trim() !== '' && 
                   sections.some(s => s.lineItems && s.lineItems.length > 0)
+
+  // Load imported invoice data
+  const loadInvoiceData = useCallback((data) => {
+    if (!data) return
+    if (data.clientName !== undefined) setClientName(data.clientName)
+    if (data.invoiceDate !== undefined) setInvoiceDate(data.invoiceDate)
+    if (data.columns !== undefined) setColumns(data.columns)
+    if (data.sections !== undefined) setSections(data.sections)
+    if (data.notes !== undefined) setNotes(data.notes)
+  }, [])
 
   return {
     // State
     clientName,
     invoiceDate,
+    columns,
     sections,
     notes,
     grandTotal,
@@ -155,6 +270,12 @@ export const useInvoiceState = () => {
     // Setters
     setClientName,
     setInvoiceDate,
+    
+    // Column operations
+    addColumn,
+    deleteColumn,
+    updateColumnLabel,
+    updateColumnFormula,
     
     // Section operations
     addSection,
@@ -169,6 +290,10 @@ export const useInvoiceState = () => {
     // Note operations
     updateNote,
     addNote,
-    removeNote
+    removeNote,
+
+    // Load data
+    loadInvoiceData
   }
 }
+

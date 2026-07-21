@@ -2,6 +2,8 @@
  * InvoiceHeader Component
  * Displays company name, tagline, invoice label, and date
  */
+import logo from '../assets/logo.png'
+
 export const InvoiceHeader = ({ invoiceDate }) => {
   const formattedDate = new Date(invoiceDate).toLocaleDateString('en-IN', {
     year: 'numeric',
@@ -12,8 +14,11 @@ export const InvoiceHeader = ({ invoiceDate }) => {
   return (
     <div className="invoice-header">
       <div className="header-left">
-        <div className="company-name">ASHMIJA</div>
-        <div className="company-tagline">— IN COLOUR —</div>
+        <img src={logo} alt="Ashmija in Color Logo" className="header-logo" />
+        <div className="header-branding">
+          <div className="company-name">ASHMIJA</div>
+          <div className="company-tagline">IN COLOR</div>
+        </div>
       </div>
       <div className="header-right">
         <div className="invoice-label">INVOICE</div>
@@ -22,3 +27,6 @@ export const InvoiceHeader = ({ invoiceDate }) => {
     </div>
   )
 }
+
+
+

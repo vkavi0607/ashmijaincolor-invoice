@@ -4,7 +4,7 @@
  */
 export const SectionEditor = ({
   section,
-  index,
+  columns,
   onTitleChange,
   onAddLineItem,
   onLineItemChange,
@@ -26,7 +26,7 @@ export const SectionEditor = ({
           onClick={() => onRemoveSection(section.id)}
           title="Remove section"
         >
-          Delete
+          Delete Section
         </button>
       </div>
 
@@ -34,61 +34,36 @@ export const SectionEditor = ({
         {section.lineItems && section.lineItems.map((item, itemIndex) => (
           <div key={item.id} className="line-item-editor">
             <div className="line-item-number">#{itemIndex + 1}</div>
-            
-            <input
-              type="text"
-              className="line-item-input"
-              placeholder="Description"
-              value={item.description}
-              onChange={(e) =>
-                onLineItemChange(section.id, item.id, {
-                  description: e.target.value
-                })
-              }
-            />
-            
-            <input
-              type="number"
-              className="line-item-input"
-              placeholder="Area/Unit"
-              value={item.area}
-              onChange={(e) =>
-                onLineItemChange(section.id, item.id, {
-                  area: e.target.value
-                })
-              }
-              step="0.01"
-            />
-            
-            <input
-              type="number"
-              className="line-item-input"
-              placeholder="Rate"
-              value={item.rate}
-              onChange={(e) =>
-                onLineItemChange(section.id, item.id, {
-                  rate: e.target.value
-                })
-              }
-              step="0.01"
-            />
-            
-            <input
-              type="number"
-              className="line-item-amount-display"
-              value={item.amount || 0}
-              onChange={(e) =>
-                onLineItemChange(section.id, item.id, {
-                  amount: e.target.value
-                })
-              }
-              placeholder="Amount"
-              readOnly
-              title="Auto-calculated from Area × Rate"
-            />
-            
+
+            <div className="line-item-fields">
+              {columns.map((col) => {
+                const isCalculated = col.isCalculated
+                const isDescription = col.id === 'description'
+
+                return (
+                  <div key={col.id} className={`line-item-field-group col-${col.id}`}>
+                    <label className="field-label-mobile">{col.label}</label>
+                    <input
+                      type={col.type === 'number' ? 'number' : 'text'}
+                      className={isCalculated ? "line-item-amount-display" : "line-item-input"}
+                      placeholder={col.label}
+                      value={item[col.id] !== undefined ? item[col.id] : ''}
+                      onChange={(e) =>
+                        onLineItemChange(section.id, item.id, {
+                          [col.id]: col.type === 'number' ? parseFloat(e.target.value) || '' : e.target.value
+                        })
+                      }
+                      readOnly={isCalculated}
+                      step={col.type === 'number' ? 'any' : undefined}
+                      title={isCalculated ? "Auto-calculated field" : undefined}
+                    />
+                  </div>
+                )
+              })}
+            </div>
+
             <button
-              className="btn btn-danger btn-sm"
+              className="btn btn-danger btn-sm btn-delete-item"
               onClick={() => onRemoveLineItem(section.id, item.id)}
               title="Remove line item"
             >
@@ -101,9 +76,11 @@ export const SectionEditor = ({
       <button
         className="btn btn-secondary btn-sm"
         onClick={() => onAddLineItem(section.id)}
+        style={{ marginTop: '10px' }}
       >
         + Add Line Item
       </button>
     </div>
   )
 }
+
